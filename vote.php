@@ -1,0 +1,9 @@
+<?php
+require_once 'config/app.php';
+require_voter();
+$pageTitle = 'Cast your ballot';
+$pdo = db();
+$election = $pdo->prepare('SELECT * FROM elections WHERE id = ?'); $election->execute([$_SESSION['election_id']]); $election = $election->fetch();
+$offices = $pdo->prepare('SELECT * FROM offices WHERE election_id = ? ORDER BY display_order'); $offices->execute([$election['id']]);
+include 'includes/header.php';
+?><div class="section-heading"><div><div class="eyebrow">Step 02 / ballot</div><h1><?= e($election['title']) ?></h1></div><span class="label">Voter: <?= e($_SESSION['voter_name']) ?></span></div><p><?= e($election['description']) ?></p><form method="post" action="confirm-vote.php"><?php foreach ($offices as $office): ?><section class="panel" style="margin:24px 0"><div class="eyebrow">Office <?= (int) $office['display_order'] ?></div><h2><?= e($office['name']) ?></h2><div class="candidate-list"><?php $candidates = $pdo->prepare('SELECT c.*, p.name party_name, p.abbreviation, p.color FROM candidates c JOIN parties p ON p.id = c.party_id WHERE c.office_id = ? ORDER BY c.id'); $candidates->execute([$office['id']]); foreach ($candidates as $candidate): ?><article class="candidate"><input id="candidate-<?= (int) $candidate['id'] ?>" type="radio" name="choices[<?= (int) $office['id'] ?>]" value="<?= (int) $candidate['id'] ?>" required><label for="candidate-<?= (int) $candidate['id'] ?>"><div class="avatar" style="color:<?= e($candidate['color']) ?>"><?= e(substr($candidate['name'], 0, 1)) ?></div><div class="candidate-name"><?= e($candidate['name']) ?></div><div class="party"><?= e($candidate['abbreviation']) ?> · <?= e($candidate['party_name']) ?></div></label></article><?php endforeach; ?></div></section><?php endforeach; ?><button class="button orange" type="submit">Review selections &rarr;</button></form><?php include 'includes/footer.php'; ?>
